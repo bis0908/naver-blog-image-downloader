@@ -1,0 +1,18 @@
+GET /PostView.naver?blogId=any_others&logNo=223895621614&redirect=Dlog&widgetTypeCall=true&noTrackingCode=true&directAccess=false HTTP/1.1
+host: blog.naver.com
+accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+accept-language: ko-KR,ko;q=0.9
+cache-control: no-cache
+pragma: no-cache
+priority: u=0, i
+referer: https://blog.naver.com/any_others/223895621614
+sec-ch-ua: "Google Chrome";v="137", "Chromium";v="137", "Not/A)Brand";v="24"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "Windows"
+sec-fetch-dest: iframe
+sec-fetch-mode: navigate
+sec-fetch-site: same-origin
+upgrade-insecure-requests: 1
+user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36
+cookie: NAC=a2x8Bowmj4wJ; NACT=1; BA_DEVICE=cf927e1d-31ea-4daa-881b-a2294cf965cd; NNB=7EURWVNXCNEWQ; SRT30=1749619639; SRT5=1749619639; BUC=5wvPqyLvksLfHolVpL20uGQVUkIuLyXe5sWRKzr1Ifk=; JSESSIONID=967E67B88F9A38D23C34B06D4B4FA9BF.jvm1
+
