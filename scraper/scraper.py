@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import re
 from utils.utils import print_error, print_info, print_success, print_warning
-from request_manager import NaverRequestManager
+from utils.request_manager import NaverRequestManager
 
 TARGET_CLASSES = [
     "se-section-image",

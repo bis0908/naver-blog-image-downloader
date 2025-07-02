@@ -7,7 +7,7 @@
 import os
 from pathlib import Path
 from scraper.scraper import NaverBlogScraper
-from downloader import ImageDownloader
+from utils.downloader import ImageDownloader
 from utils.utils import get_user_input, print_success, print_error
 
 

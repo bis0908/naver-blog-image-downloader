@@ -1,0 +1,19 @@
+{
+  "last_save_path": "C:\\workSpace\\python\\naver-blog-image-downloader",
+  "last_url": "",
+  "transform_options": {
+    "random_size": true,
+    "random_angle": true,
+    "random_pixel": true,
+    "add_outline": true
+  },
+  "window_geometry": {
+    "width": 538,
+    "height": 292
+  },
+  "ui_settings": {
+    "progress_update_interval": 100,
+    "log_max_length": 20,
+    "auto_save_settings": true
+  }
+}
