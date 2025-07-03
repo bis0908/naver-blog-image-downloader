@@ -223,15 +223,29 @@ class UIController:
     def _download_images(self, image_urls: List[str], save_dir: Path) -> bool:
         """이미지 다운로드를 실행합니다."""
         try:
+            # blogfiles.pstatic.net URL 사전 필터링
+            filtered_urls = [
+                url for url in image_urls if "blogfiles.pstatic.net" not in url
+            ]
+
+            if not filtered_urls:
+                self.log_callback("다운로드 가능한 이미지가 없습니다")
+                return False
+
+            # 필터링 결과 로그
+            if len(filtered_urls) < len(image_urls):
+                excluded_count = len(image_urls) - len(filtered_urls)
+                self.log_callback(f"{excluded_count}개 이미지 제외됨")
+
             with ImageDownloader(save_dir) as downloader:
-                total_images = len(image_urls)
+                total_images = len(filtered_urls)  # 실제 처리할 이미지 개수
                 successful_downloads = 0
 
-                for i, url in enumerate(image_urls):
+                for i, url in enumerate(filtered_urls):
                     if self._check_cancelled():
                         return False
 
-                    # 진행률 계산 (0% ~ 50%)
+                    # 진행률 계산 (0% ~ 50%) - 실제 처리할 이미지 기준
                     progress = int((i / total_images) * 50)
                     self.progress_callback(progress)
                     self.log_callback(f"다운로드 중: {i + 1}/{total_images}")

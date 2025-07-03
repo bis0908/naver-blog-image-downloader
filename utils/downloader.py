@@ -55,6 +55,13 @@ class ImageDownloader:
                 #     print_warning(f"{len(filtered_urls)}개 중 {i}번째 건너뜀 (blogfiles.pstatic.net URL): {url}")
                 #     continue
 
+                # url에 blogfiles.pstatic.net 포함되어 있으면 제외
+                if "blogfiles.pstatic.net" in url:
+                    print_warning(
+                        f"{len(filtered_urls)}개 중 {i}번째 건너뜀 (blogfiles.pstatic.net URL): {url}"
+                    )
+                    continue
+
                 # URL 해상도 최적화
                 optimized_url = self._optimize_image_url(url)
                 if optimized_url != url:
@@ -63,7 +70,7 @@ class ImageDownloader:
                 filename = self._generate_filename(optimized_url, i)
                 file_path = self.save_directory / filename
 
-                print_info(f"{len(filtered_urls)}개 중 {i}번째 다운로드 중: {filename}")
+                print_info(f"{len(image_urls)}개 중 {i}번째 다운로드 중: {filename}")
 
                 if self._download_single_image(optimized_url, file_path):
                     successful_downloads += 1
