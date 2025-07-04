@@ -84,6 +84,9 @@ class StreamingImageProcessor:
         # 출력 디렉토리 생성
         output_dir.mkdir(parents=True, exist_ok=True)
 
+        # 성공적으로 처리된 원본 파일들을 추적
+        successfully_processed_files = []
+
         try:
             for i, image_path in enumerate(image_paths):
                 # 취소 확인
@@ -104,7 +107,7 @@ class StreamingImageProcessor:
 
                     original_image = Image.open(image_path)
 
-                    # 같은 폴더의 다른 이미지들 준비 (현재 처리 중인 이미지 확실히 제외)
+                    # 같은 폴더의 다른 이미지들 준비 (현재 처리 중인 이미지 제외)
                     current_image_absolute = image_path.resolve()
                     available_images = []
 
@@ -142,19 +145,14 @@ class StreamingImageProcessor:
                         transformed_image, output_path
                     ):
                         result["success_count"] += 1
+                        # 성공한 파일을 추적 목록에 추가
+                        successfully_processed_files.append(image_path)
 
                         # 메모리 절약을 위해 이미지 객체 삭제
                         del original_image
                         del transformed_image
 
-                        # 원본 파일 삭제 (스트리밍 처리)
-                        try:
-                            image_path.unlink()
-                            self.logger.info(f"원본 파일 삭제됨: {image_path}")
-                        except Exception as e:
-                            self.logger.warning(
-                                f"원본 파일 삭제 실패: {image_path}, 오류: {str(e)}"
-                            )
+                        self.logger.info(f"이미지 변형 완료: {image_path.name}")
                     else:
                         result["fail_count"] += 1
                         result["failed_files"].append(str(image_path))
@@ -166,6 +164,24 @@ class StreamingImageProcessor:
 
                 # CPU 사용률 조절을 위한 짧은 대기
                 time.sleep(0.01)
+
+            # 모든 처리가 완료된 후 성공한 원본 파일들을 일괄 삭제
+            if not result["cancelled"] and successfully_processed_files:
+                self.log_callback("원본 파일들을 정리 중...")
+                deleted_count = 0
+
+                for original_file in successfully_processed_files:
+                    try:
+                        if original_file.exists():
+                            original_file.unlink()
+                            deleted_count += 1
+                            self.logger.info(f"원본 파일 삭제: {original_file.name}")
+                    except Exception as e:
+                        self.logger.warning(
+                            f"원본 파일 삭제 실패: {original_file}, 오류: {str(e)}"
+                        )
+
+                self.log_callback(f"원본 파일 {deleted_count}개 정리 완료")
 
             # 완료 처리
             if not result["cancelled"]:
