@@ -38,10 +38,10 @@ class ImageTransformer:
         이미지 폭을 최대 크기 이하로 비율을 유지하면서 축소합니다.
 
         Args:
-            image: 원본 PIL Image 객체
+            image: 원본 PIL Image 객체 (RGB 또는 RGBA)
 
         Returns:
-            축소된 PIL Image 객체 (필요한 경우)
+            축소된 PIL Image 객체 (필요한 경우, 원본 모드 유지)
         """
         try:
             current_width = image.width
@@ -56,7 +56,7 @@ class ImageTransformer:
             new_width = self.MAX_WIDTH
             new_height = int(image.height * scale_ratio)
 
-            # 고품질 리샘플링으로 축소
+            # 고품질 리샘플링으로 축소 (원본 모드 유지)
             resized_image = image.resize(
                 (new_width, new_height), Image.Resampling.LANCZOS
             )
@@ -88,10 +88,14 @@ class ImageTransformer:
                 - add_outline: 테두리 추가
 
         Returns:
-            변형된 PIL Image 객체
+            변형된 PIL Image 객체 (RGBA 모드)
         """
         try:
-            transformed_image = image.copy()
+            # RGBA 모드로 변환하여 투명도 지원
+            if image.mode != "RGBA":
+                transformed_image = image.convert("RGBA")
+            else:
+                transformed_image = image.copy()
 
             # 1. 랜덤 비율 조정 (±5%)
             if options.get("random_size", False):
@@ -106,11 +110,12 @@ class ImageTransformer:
             if options.get("add_outline", False):
                 transformed_image = self._add_border(transformed_image)
 
-            # 3. 랜덤 기울기 (±3도) - 테두리와 함께 회전
+            # 3. 랜덤 기울기 (±3도) - 투명한 배경으로 회전
             if options.get("random_angle", False):
                 angle = random.uniform(*self.ROTATION_RANGE)
+                # 투명한 배경으로 회전 (검은색 배경 대신)
                 transformed_image = transformed_image.rotate(
-                    angle, expand=True, fillcolor=None
+                    angle, expand=True, fillcolor=(0, 0, 0, 0)
                 )
 
             # 4. 랜덤 픽셀 추가 (마지막에 추가하여 회전으로 인한 손실 방지)
@@ -126,9 +131,9 @@ class ImageTransformer:
     def _add_random_pixels(self, image: Image.Image) -> Image.Image:
         """이미지에 랜덤 픽셀을 추가합니다."""
         try:
-            # RGB 모드로 변환 (필요한 경우)
-            if image.mode != "RGB":
-                image = image.convert("RGB")
+            # RGBA 모드로 변환 (필요한 경우)
+            if image.mode != "RGBA":
+                image = image.convert("RGBA")
 
             draw = ImageDraw.Draw(image)
             pixel_count = random.randint(*self.RANDOM_PIXEL_COUNT_RANGE)
@@ -136,11 +141,12 @@ class ImageTransformer:
             for _ in range(pixel_count):
                 x = random.randint(0, image.width - 1)
                 y = random.randint(0, image.height - 1)
-                # 랜덤 색상 (밝은 색상 우선)
+                # 랜덤 색상 (밝은 색상 우선, 완전 불투명)
                 color = (
                     random.randint(*self.RANDOM_PIXEL_COLOR_RANGE),
                     random.randint(*self.RANDOM_PIXEL_COLOR_RANGE),
                     random.randint(*self.RANDOM_PIXEL_COLOR_RANGE),
+                    255,  # 완전 불투명
                 )
                 draw.point((x, y), fill=color)
 
@@ -156,22 +162,26 @@ class ImageTransformer:
             # 고정 테두리 두께 사용
             border_width = self.BORDER_WIDTH
 
-            # 랜덤 테두리 색상
+            # 랜덤 테두리 색상 (완전 불투명)
             border_color = (
                 random.randint(*self.BORDER_COLOR_RANGE),
                 random.randint(*self.BORDER_COLOR_RANGE),
                 random.randint(*self.BORDER_COLOR_RANGE),
+                255,  # 완전 불투명
             )
 
             # 새로운 크기로 이미지 생성
             new_width = image.width + (border_width * 2)
             new_height = image.height + (border_width * 2)
 
-            # 테두리 색상으로 채운 새 이미지 생성
-            bordered_image = Image.new("RGB", (new_width, new_height), border_color)
+            # 테두리 색상으로 채운 새 이미지 생성 (RGBA 모드)
+            bordered_image = Image.new("RGBA", (new_width, new_height), border_color)
 
-            # 원본 이미지를 중앙에 붙이기
-            bordered_image.paste(image, (border_width, border_width))
+            # 원본 이미지를 중앙에 붙이기 (알파 채널 고려)
+            if image.mode == "RGBA":
+                bordered_image.paste(image, (border_width, border_width), image)
+            else:
+                bordered_image.paste(image, (border_width, border_width))
 
             self.logger.debug(f"테두리 추가: {border_width}px, 색상: {border_color}")
             return bordered_image
@@ -195,13 +205,13 @@ class ImageTransformer:
             available_images: 같은 폴더의 다른 이미지 경로 리스트
 
         Returns:
-            3겹으로 레이어된 최종 PIL Image 객체 (100% 불투명도)
+            3겹으로 레이어된 최종 PIL Image 객체 (RGB 모드)
         """
         try:
-            # 메인 이미지 전처리: RGB 변환 및 크기 축소
-            if original_image.mode != "RGB":
-                original_image = original_image.convert("RGB")
-                self.logger.debug("메인 이미지를 RGB 모드로 변환")
+            # 메인 이미지 전처리: RGBA 변환 및 크기 축소
+            if original_image.mode != "RGBA":
+                original_image = original_image.convert("RGBA")
+                self.logger.debug("메인 이미지를 RGBA 모드로 변환")
 
             # 메인 이미지 크기 축소 (1500px 미만으로)
             original_image = self._resize_to_max_width(original_image)
@@ -229,9 +239,9 @@ class ImageTransformer:
                     try:
                         bg_img = Image.open(img_path)
 
-                        # 배경 이미지 전처리: RGB 변환 및 크기 축소
-                        if bg_img.mode != "RGB":
-                            bg_img = bg_img.convert("RGB")
+                        # 배경 이미지 전처리: RGBA 변환 및 크기 축소
+                        if bg_img.mode != "RGBA":
+                            bg_img = bg_img.convert("RGBA")
 
                         # 배경 이미지도 크기 축소 적용
                         bg_img = self._resize_to_max_width(bg_img)
@@ -281,11 +291,13 @@ class ImageTransformer:
             final_width = int(max_width * (1 + self.CANVAS_MARGIN))
             final_height = int(max_height * (1 + self.CANVAS_MARGIN))
 
-            # 흰색 배경으로 최종 이미지 생성
-            final_image = Image.new("RGB", (final_width, final_height), "white")
+            # 흰색 배경으로 최종 이미지 생성 (RGBA 모드)
+            final_image = Image.new(
+                "RGBA", (final_width, final_height), (255, 255, 255, 255)
+            )
             self.logger.debug(f"최종 캔버스 크기: {final_width}x{final_height}")
 
-            # 배경 이미지들을 중앙 근처에 배치 (후방)
+            # 배경 이미지들을 중앙 근처에 배치 (후방) - 투명도 고려
             for i, bg_img in enumerate(background_images):
                 max_x = final_width - bg_img.width
                 max_y = final_height - bg_img.height
@@ -315,37 +327,51 @@ class ImageTransformer:
                         )
                         position_desc = "우하단 중앙 근처"
 
-                    # 100% 불투명도로 배치
-                    final_image.paste(bg_img, (x, y))
+                    # 투명도를 고려하여 배치
+                    final_image.paste(bg_img, (x, y), bg_img)
                     self.logger.debug(
                         f"배경 이미지 {i + 1} {position_desc} 배치: ({x}, {y})"
                     )
 
-            # 메인 이미지를 정확히 중앙에 배치 (최상단)
+            # 메인 이미지를 정확히 중앙에 배치 (최상단) - 투명도 고려
             main_x = (final_width - main_transformed.width) // 2
             main_y = (final_height - main_transformed.height) // 2
 
-            # 메인 이미지도 100% 불투명도로 배치
-            final_image.paste(main_transformed, (main_x, main_y))
+            # 메인 이미지도 투명도를 고려하여 배치
+            final_image.paste(main_transformed, (main_x, main_y), main_transformed)
             self.logger.debug(f"메인 이미지 중앙 배치: ({main_x}, {main_y})")
-            self.logger.info(f"레이어드 이미지 생성 완료: {final_width}x{final_height}")
+
+            # 최종 이미지를 RGB로 변환 (투명도 제거)
+            final_rgb = Image.new("RGB", final_image.size, (255, 255, 255))
+            final_rgb.paste(
+                final_image, mask=final_image.split()[-1]
+            )  # 알파 채널을 마스크로 사용
+
+            self.logger.info(
+                f"레이어드 이미지 생성 완료: {final_width}x{final_height} (RGB 변환)"
+            )
 
             # 최종 이미지가 MAX_WIDTH를 초과하는 경우 다시 축소
-            if final_image.width > self.MAX_WIDTH:
+            if final_rgb.width > self.MAX_WIDTH:
                 self.logger.info(
-                    f"최종 이미지 폭이 {self.MAX_WIDTH}px 초과: {final_image.width}px"
+                    f"최종 이미지 폭이 {self.MAX_WIDTH}px 초과: {final_rgb.width}px"
                 )
-                final_image = self._resize_to_max_width(final_image)
+                final_rgb = self._resize_to_max_width(final_rgb)
                 self.logger.info(
-                    f"최종 이미지 크기 조정 완료: {final_image.width}x{final_image.height}"
+                    f"최종 이미지 크기 조정 완료: {final_rgb.width}x{final_rgb.height}"
                 )
 
-            return final_image
+            return final_rgb
 
         except Exception as e:
             self.logger.error(f"레이어 이미지 생성 중 오류: {str(e)}")
-            # 오류 시 단순 변형 이미지 반환
-            return self.apply_random_transforms(original_image, transform_options)
+            # 오류 시 단순 변형 이미지 반환 (RGB로 변환)
+            fallback = self.apply_random_transforms(original_image, transform_options)
+            if fallback.mode == "RGBA":
+                fallback_rgb = Image.new("RGB", fallback.size, (255, 255, 255))
+                fallback_rgb.paste(fallback, mask=fallback.split()[-1])
+                return fallback_rgb
+            return fallback
 
     def save_transformed_image(
         self, image: Image.Image, output_path: Path, quality: int = 95
