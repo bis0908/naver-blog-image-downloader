@@ -168,7 +168,7 @@ class UIController:
 
             # 1단계: 포스팅 제목 추출 및 폴더 생성
             self.log_callback("포스팅 정보 추출 중...")
-            self.progress_callback(5)
+            self.progress_callback(1)
 
             if self._check_cancelled():
                 return
@@ -179,7 +179,7 @@ class UIController:
 
             # 2단계: 이미지 URL 추출
             self.log_callback("이미지 목록 추출 중...")
-            self.progress_callback(10)
+            self.progress_callback(2)
 
             if self._check_cancelled():
                 return
