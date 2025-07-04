@@ -5,8 +5,8 @@
 
 import random
 from pathlib import Path
-from typing import Dict, Any, Tuple
-from PIL import Image, ImageDraw, ImageFilter
+from typing import Dict
+from PIL import Image, ImageDraw
 import logging
 
 
@@ -18,7 +18,7 @@ class ImageTransformer:
     SIZE_VARIATION_RANGE = (0.95, 1.05)  # 크기 변형 범위 (±5%)
     ROTATION_RANGE = (-3, 3)  # 회전 각도 범위 (±3도)
     RANDOM_PIXEL_COUNT_RANGE = (3, 5)  # 랜덤 픽셀 개수 범위
-    RANDOM_PIXEL_COLOR_RANGE = (100, 255)  # 랜덤 픽셀 밝기 범위
+    RANDOM_PIXEL_COLOR_RANGE = (200, 255)  # 랜덤 픽셀 밝기 범위
     BORDER_COLOR_RANGE = (50, 200)  # 테두리 색상 범위
 
     # 배경 이미지 배치 관련 상수들
@@ -28,7 +28,7 @@ class ImageTransformer:
     CANVAS_MARGIN = 0.2  # 전체 캔버스 여백 (20%)
 
     # 이미지 크기 관련 상수들
-    MAX_WIDTH = 1500  # 최대 폭 (픽셀)
+    MAX_WIDTH = 1400  # 최대 폭 (픽셀)
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
@@ -110,7 +110,7 @@ class ImageTransformer:
             if options.get("random_angle", False):
                 angle = random.uniform(*self.ROTATION_RANGE)
                 transformed_image = transformed_image.rotate(
-                    angle, expand=True, fillcolor="white"
+                    angle, expand=True, fillcolor=None
                 )
 
             # 4. 랜덤 픽셀 추가 (마지막에 추가하여 회전으로 인한 손실 방지)
